@@ -15,3 +15,6 @@
 
 #### webchuck
 - https://chuck.cs.princeton.edu/webchuck/
+
+#### javascript game engines
+https://github.com/collections/javascript-game-engines
