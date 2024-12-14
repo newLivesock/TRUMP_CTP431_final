@@ -2,27 +2,23 @@ const app = new PIXI.Application();
 globalThis.__PIXI_APP__ = app; // PixiJS DevTools
 
 const cards = [];
+let mode = "m"; // Move
+let modeText;
 
 window.onload = async function() {
   await setup()
+  createModeIndicator()
   await preload()
+  addEventListener("keydown", handleKeyEvent)
 }
 
-
+// // // // // // // // // // // // // // // //
 
 // https://pixijs.com/8.x/tutorials/fish-pond
 
 async function setup() {
   await app.init({ background: "#3e8f74", resizeTo: window });
   const canvas = document.body.appendChild(app.canvas);
-  canvas.oncontextmenu = () => { return false; };
-
-  app.stage.eventMode = "static";
-  app.stage.hitArea = app.screen;
-  app.stage
-    .on("rightdown", (event) => {
-      addCardSprite()
-    })
 }
 
 async function preload() {
@@ -39,15 +35,13 @@ async function preload() {
   }
 }
 
-
-
 function addCardSprite(faceWidth = 90, borderWidth = 2) {
 
   let card = new PIXI.Container();
   card.x = app.screen.width / 2;
   card.y = app.screen.height / 2;
 
-  let cardFace = PIXI.Sprite.from(window.prompt());
+  let cardFace = PIXI.Sprite.from(prompt());
   cardFace.anchor.set(0.5);
   cardFace.width = faceWidth;
   cardFace.scale.y = cardFace.scale.x;
@@ -78,5 +72,36 @@ function addCardSprite(faceWidth = 90, borderWidth = 2) {
 
   app.stage.addChild(card);
   cards.push(card);
+}
+
+function verboseMode(mode) {
+  return { "m": "Move", "x": "Delete", "c": "Connect" }[mode]
+}
+
+function handleKeyEvent(event) {
+  if (event.key === "n") { // New card
+    addCardSprite();
+  } else if ("mxc".includes(event.key)) {
+    mode = event.key;
+  }
+  modeText.text = verboseMode(mode)
+}
+
+function createModeIndicator() {
+  let modeIndicator = new PIXI.Container()
+  modeIndicator.x = 10
+  modeIndicator.y = 10
+  modeIndicator.alpha = 0.5
+
+  modeText = new PIXI.Text({
+    text: verboseMode(mode),
+    style: {
+      fill: "white",
+      fontFamily: "monospace",
+      padding: 10
+    }
+  });
+  modeIndicator.addChild(modeText);
+  app.stage.addChild(modeIndicator);
 }
 
