@@ -1,25 +1,29 @@
 let addCardSprite = function(obj, x, y, suit, value) {
-  let color;
-  if (suit == "S") {
-    color = 0x000;
-  } else if (suit == "H") {
-    color = 0xf00;
-  } else if (suit == "D") {
-    color = 0x804;
-  } else if (suit == "C") {
-    color= 0x448;
+  if (value < 2) {
+    value = 2;
+  } else if (value > 10) {
+    value = 10;
   }
 
-  let card = new PIXI.Graphics()
-  .rect(-45, -60, 90, 120)
-  .fill(color)
+  let cardContainer = new PIXI.Container();
 
-  card.x = x;
-  card.y = y;
+  let card = PIXI.Sprite.from("Image_trumpcards/H" + value + ".png");
+  card.scale.set(3);
+  card.anchor.set(0.5);
 
-  card.eventMode = "static";
-  card.cursor = "pointer";
-  card
+  let bW = 2;
+  let cardBorder = new PIXI.Graphics()
+  .roundRect(-45 - bW, -60 - bW, 90 + 2 * bW, 120 + 2 * bW, 2 * bW)
+  .fill("#666");
+
+  cardContainer.addChild(cardBorder);
+  cardContainer.addChild(card);
+  cardContainer.x = x;
+  cardContainer.y = y;
+
+  cardContainer.eventMode = "static";
+  cardContainer.cursor = "pointer";
+  cardContainer
     .on("pointerdown", (event) => { 
       event.currentTarget.dragging = 1; 
     })
@@ -34,20 +38,26 @@ let addCardSprite = function(obj, x, y, suit, value) {
       event.currentTarget.dragging = 0; 
     })
 
-  obj.addChild(card);
+  obj.addChild(cardContainer);
 }
 
 window.onload = async function() {
   const app = new PIXI.Application(); 
+  globalThis.__PIXI_APP__ = app;
   await app.init({ background: "white", resizeTo: window });
   const canvas = document.body.appendChild(app.canvas);
   canvas.oncontextmenu = () => { return false; };
 
+  for (let i = 2; i < 11; i++) {
+    let texture = await PIXI.Assets.load("Image_trumpcards/H" + i + ".png");
+    texture.source.scaleMode = "nearest";
+  }
+
   app.stage.eventMode = "static";
-  addCardSprite(app.stage, 100, 100, "C", 12);
+  addCardSprite(app.stage, 100, 100, "H", 5);
   app.stage.hitArea = app.screen;
   app.stage
     .on("rightdown", (event) => {
-      addCardSprite(app.stage, 100, 100, "C", 12)
+      addCardSprite(app.stage, 100, 100, "H", 7)
     })
 }
