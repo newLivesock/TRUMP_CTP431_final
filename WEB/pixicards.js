@@ -1,31 +1,69 @@
-let addCardSprite = function(obj, x, y, suit, value) {
-  if (value < 2) {
-    value = 2;
-  } else if (value > 10) {
-    value = 10;
+const app = new PIXI.Application();
+globalThis.__PIXI_APP__ = app; // PixiJS DevTools
+
+const cards = [];
+
+window.onload = async function() {
+  await setup()
+  await preload()
+}
+
+
+
+// https://pixijs.com/8.x/tutorials/fish-pond
+
+async function setup() {
+  await app.init({ background: "#3e8f74", resizeTo: window });
+  const canvas = document.body.appendChild(app.canvas);
+  canvas.oncontextmenu = () => { return false; };
+
+  app.stage.eventMode = "static";
+  app.stage.hitArea = app.screen;
+  app.stage
+    .on("rightdown", (event) => {
+      addCardSprite()
+    })
+}
+
+async function preload() {
+  const assets = [];
+  for (let suit of "SDHC") {
+    for (let value = 1; value <= 13; value++) {
+      const cardName = suit + value;
+      assets.push({ alias: cardName, src: `./Image_trumpcards/${cardName}.png` });
+    }
   }
+  const textures = await PIXI.Assets.load(assets)
+  for (const alias in textures) {
+    textures[alias].source.scaleMode = "nearest";
+  }
+}
 
-  let cardContainer = new PIXI.Container();
 
-  let card = PIXI.Sprite.from("Image_trumpcards/H" + value + ".png");
-  card.scale.set(3);
-  card.anchor.set(0.5);
 
-  let bW = 2;
-  let cardBorder = new PIXI.Graphics()
-  .roundRect(-45 - bW, -60 - bW, 90 + 2 * bW, 120 + 2 * bW, 2 * bW)
-  .fill("#666");
+function addCardSprite(faceWidth = 90, borderWidth = 2) {
 
-  cardContainer.addChild(cardBorder);
-  cardContainer.addChild(card);
-  cardContainer.x = x;
-  cardContainer.y = y;
+  let card = new PIXI.Container();
+  card.x = app.screen.width / 2;
+  card.y = app.screen.height / 2;
 
-  cardContainer.eventMode = "static";
-  cardContainer.cursor = "pointer";
-  cardContainer
-    .on("pointerdown", (event) => { 
-      event.currentTarget.dragging = 1; 
+  let cardFace = PIXI.Sprite.from(window.prompt());
+  cardFace.anchor.set(0.5);
+  cardFace.width = faceWidth;
+  cardFace.scale.y = cardFace.scale.x;
+  const faceHeight = cardFace.height
+
+  let cardBorder = new PIXI.Graphics().roundRect(-borderWidth, -borderWidth, faceWidth + 2*borderWidth, faceHeight + 2*borderWidth, 2*borderWidth).fill("214e3e");
+  cardBorder.pivot.set(faceWidth / 2, faceHeight / 2);
+
+  card.addChild(cardBorder);
+  card.addChild(cardFace);
+
+  card.eventMode = "static";
+  card.cursor = "pointer";
+  card
+    .on("pointerdown", (event) => {
+      event.currentTarget.dragging = 1;
     })
     .on("pointermove", (event) => {
       let obj = event.currentTarget;
@@ -34,30 +72,11 @@ let addCardSprite = function(obj, x, y, suit, value) {
         obj.position.y = event.data.getLocalPosition(obj.parent).y;
       }
     })
-    .on("pointerup", (event) => { 
-      event.currentTarget.dragging = 0; 
+    .on("pointerup", (event) => {
+      event.currentTarget.dragging = 0;
     })
 
-  obj.addChild(cardContainer);
+  app.stage.addChild(card);
+  cards.push(card);
 }
 
-window.onload = async function() {
-  const app = new PIXI.Application(); 
-  globalThis.__PIXI_APP__ = app;
-  await app.init({ background: "white", resizeTo: window });
-  const canvas = document.body.appendChild(app.canvas);
-  canvas.oncontextmenu = () => { return false; };
-
-  for (let i = 2; i < 11; i++) {
-    let texture = await PIXI.Assets.load("Image_trumpcards/H" + i + ".png");
-    texture.source.scaleMode = "nearest";
-  }
-
-  app.stage.eventMode = "static";
-  addCardSprite(app.stage, 100, 100, "H", 5);
-  app.stage.hitArea = app.screen;
-  app.stage
-    .on("rightdown", (event) => {
-      addCardSprite(app.stage, 100, 100, "H", 7)
-    })
-}
