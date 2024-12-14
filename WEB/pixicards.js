@@ -57,6 +57,7 @@ function addCardSprite(faceWidth = 90, borderWidth = 2) {
   card.cursor = "pointer";
   card
     .on("pointerdown", (event) => {
+      event.currentTarget.parent.setChildIndex(event.currentTarget, event.currentTarget.parent.children.length -1);
       event.currentTarget.dragging = 1;
     })
     .on("pointermove", (event) => {
