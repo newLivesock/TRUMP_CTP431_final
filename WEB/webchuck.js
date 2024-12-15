@@ -5,7 +5,7 @@ import { Chuck } from 'https://cdn.jsdelivr.net/npm/webchuck/+esm';
 let theChuck; // global variable
 
 async function play(cards, lines) {
-  console.log("tried to play, the value of theChuck is " + theChuck);
+  // console.log("tried to play, the value of theChuck is " + theChuck);
   // Initialize default ChucK object
   if (theChuck === undefined) {
     theChuck = await Chuck.init([]);
@@ -21,5 +21,5 @@ async function play(cards, lines) {
   }
 }
 
-export { play };
+export { theChuck, play };
 

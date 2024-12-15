@@ -1,6 +1,6 @@
 "use strict";
 
-import { play } from "./webchuck.js"
+import { theChuck, play } from "./webchuck.js"
 
 const app = new PIXI.Application();
 globalThis.__PIXI_APP__ = app; // PixiJS DevTools
@@ -103,6 +103,9 @@ function handleKeyEvent(event) {
     mode = event.key;
   }
   modeText.text = verboseMode(mode)
+  if (theChuck === undefined) {
+    modeText.text += "\nWaiting for WebChucK";
+  }
 }
 
 function createModeIndicator() {
