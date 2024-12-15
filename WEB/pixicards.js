@@ -18,14 +18,15 @@ window.onload = async function() {
   createModeIndicator()
   await preload()
   addEventListener("keydown", handleKeyEvent)
-  allCardsContainer.addChild(new Card(true)) // joker
+  const joker = new Card(true);
+  allCardsContainer.addChild(joker);
   let elapsed = 0.0;
   app.ticker.add((time) => {
     elapsed += time.deltaTime;
     updateArrowVisual();
-    if (elapsed > 300) {
-      elapsed -= 300;
-      play(0, 0);
+    if (elapsed > 60) { // 1/60
+      elapsed -= 60;
+      // play(0, 0);
     }
   })
 }
@@ -195,7 +196,6 @@ class Arrow extends PIXI.Container {
 
 function removeArrowFrom(card) {
   card.next.prevs = card.next.prevs.filter((c) => !Object.is(c, card));
-  // console.log(card.next.prevs);
   card.next = null;
 }
 
@@ -212,7 +212,6 @@ function addArrow(prevCard, nextCard) {
 
 function toggleArrow(prevCard, nextCard) {
   if (prevCard.next && Object.is(prevCard.next, nextCard)) {
-    // console.log("Im ehreeeeR");
     removeArrowFrom(prevCard);
   } else if (prevCard.next) {
     if (nextCard.joker || nextCard.prevs.length == 0) {
@@ -233,6 +232,40 @@ function updateArrowVisual() {
       allArrowsContainer.addChild(new Arrow(endCard, endCard.next));
     }
   }
+}
+
+// // // // // // // // // // // // // // // //
+
+const tonicFreq = 65.406 // Hz
+const scaleList = [];
+for (let i = 0; i < 13; i++) {
+  scaleList.push(tonicFreq * Math.pow(2, i / 12));
+}
+
+function valueToFreq(values) {
+  const fundFreq = scaleList[values[0] - 1];
+  let freqs = [ fundFreq ];
+  for (let i = 1; i < values.length; i++) {
+    freqs.push(fundFreq * values[i]);
+  }
+  return freqs;
+}
+
+function generateListForChucK(joker) {
+  let resultSuit = [];
+  let resultFreq = [];
+  for (let c of joker.prevs) {
+    let suits = [c.suit];
+    let values = [c.value];
+    while (c.prevs[0]) {
+      c = c.prevs[0];
+      suits.push(c.suit);
+      values.push(c.value);
+    }
+    resultSuit.push(suits);
+    resultFreq.push(valueToFreq(values));
+  }
+  return [resultSuit, resultFreq];
 }
 
 // // // // // // // // // // // // // // // //
