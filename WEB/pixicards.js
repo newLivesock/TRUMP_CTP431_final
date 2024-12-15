@@ -2,19 +2,23 @@ const app = new PIXI.Application();
 globalThis.__PIXI_APP__ = app; // PixiJS DevTools
 
 const cards = [];
+let totalCardsMade = 0;
 let mode = "m"; // Move
 let modeText;
+
+let movingCardId;
+let movingCardDelta = {x: null, y: null};
 
 window.onload = async function() {
   await setup()
   createModeIndicator()
   await preload()
   addEventListener("keydown", handleKeyEvent)
+  app.ticker.add((time) => {
+  })
 }
 
-// // // // // // // // // // // // // // // //
-
-// https://pixijs.com/8.x/tutorials/fish-pond
+// // // // // // // // // // // // // // // // https://pixijs.com/8.x/tutorials/fish-pond
 
 async function setup() {
   await app.init({ background: "#3e8f74", resizeTo: window });
@@ -34,6 +38,8 @@ async function preload() {
     textures[alias].source.scaleMode = "nearest";
   }
 }
+
+// // // // // // // // // // // // // // // //
 
 function addCardSprite(faceWidth = 90, borderWidth = 2) {
 
@@ -56,24 +62,17 @@ function addCardSprite(faceWidth = 90, borderWidth = 2) {
   card.eventMode = "static";
   card.cursor = "pointer";
   card
-    .on("pointerdown", (event) => {
-      event.currentTarget.parent.setChildIndex(event.currentTarget, event.currentTarget.parent.children.length -1);
-      event.currentTarget.dragging = 1;
-    })
-    .on("pointermove", (event) => {
-      let obj = event.currentTarget;
-      if (obj.dragging == 1) {
-        obj.position.x = event.data.getLocalPosition(obj.parent).x;
-        obj.position.y = event.data.getLocalPosition(obj.parent).y;
-      }
-    })
-    .on("pointerup", (event) => {
-      event.currentTarget.dragging = 0;
-    })
+    .on("pointerdown", focusCard)
+    .on("pointerup", unfocusCard)
+    .on("pointerleave", unfocusCard)
+    .on("pointermove", updateMovingCard)
 
+  card.cardId = totalCardsMade++;
   app.stage.addChild(card);
   cards.push(card);
 }
+
+// // // // // // // // // // // // // // // //
 
 function verboseMode(mode) {
   return { "m": "Move", "x": "Delete", "c": "Connect" }[mode]
@@ -104,5 +103,34 @@ function createModeIndicator() {
   });
   modeIndicator.addChild(modeText);
   app.stage.addChild(modeIndicator);
+}
+
+// // // // // // // // // // // // // // // //
+
+function focusCard(event) {
+  let focusedCard = event.currentTarget;
+  if (mode === "x") {
+    focusedCard.parent.removeChild(focusedCard);
+    cards[focusedCard.cardId] = null; // WIP: remove lines too
+  } else if (mode === "m" && !movingCardId) {
+    focusedCard.parent.setChildIndex(focusedCard, focusedCard.parent.children.length - 1);
+    movingCardId = focusedCard.cardId;
+    movingCardDelta.x = event.data.getLocalPosition(focusedCard.parent).x - focusedCard.position.x;
+    movingCardDelta.y = event.data.getLocalPosition(focusedCard.parent).y - focusedCard.position.y;
+  }
+}
+
+function unfocusCard(event) {
+  movingCardId = null;
+  movingCardDelta.x = null;
+  movingCardDelta.y = null;
+}
+
+function updateMovingCard(event) {
+  let focusedCard = event.currentTarget;
+  if (movingCardId == focusedCard.cardId) {
+    focusedCard.position.x = event.data.getLocalPosition(focusedCard.parent).x - movingCardDelta.x;
+    focusedCard.position.y = event.data.getLocalPosition(focusedCard.parent).y - movingCardDelta.y;
+  }
 }
 
