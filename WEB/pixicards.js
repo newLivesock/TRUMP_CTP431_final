@@ -5,15 +5,9 @@ import { theChuck, play } from "./webchuck.js"
 const app = new PIXI.Application();
 globalThis.__PIXI_APP__ = app; // PixiJS DevTools
 
-const cards = [];
-let totalCardsMade = 0;
 let mode = "m"; // Move
 let modeText;
 
-let movingCardId;
-let movingCardDelta = {x: null, y: null};
-
-let startConnectionCard;
 let lines = {};
 
 window.onload = async function() {
@@ -57,38 +51,105 @@ async function preload() {
 
 // // // // // // // // // // // // // // // //
 
-function addCardSprite(faceWidth = 90, borderWidth = 2) {
+parsePrompt(text) {
+  const args = text.split(" "); // WIP
+  const valueWord = args[0];
+  const suitWord = args[2];
 
-  let card = new PIXI.Container();
-  card.x = app.screen.width / 2;
-  card.y = app.screen.height / 2;
+  let value;
+  if (valueWord == "ace") {
+    value = 1;
+  } else {
+    value = parseInt(valueWord);
+  }
 
-  let cardFace = PIXI.Sprite.from(prompt());
-  cardFace.anchor.set(0.5);
-  cardFace.width = faceWidth;
-  cardFace.scale.y = cardFace.scale.x;
-  const faceHeight = cardFace.height
-
-  let cardBorder = new PIXI.Graphics().roundRect(-borderWidth, -borderWidth, faceWidth + 2*borderWidth, faceHeight + 2*borderWidth, 2*borderWidth).fill("214e3e");
-  cardBorder.pivot.set(faceWidth / 2, faceHeight / 2);
-
-  card.addChild(cardBorder);
-  card.addChild(cardFace);
-
-  card.eventMode = "static";
-  card.cursor = "pointer";
-  card
-    .on("pointerdown", focusCard)
-    .on("pointerup", unfocusCard)
-    .on("pointerleave", unfocusCard)
-    .on("pointermove", updateMovingCard)
-
-  card.cardId = totalCardsMade++;
-  app.stage.addChild(card);
-  cards.push(card);
-
-  card.connectedLines = [];
+  return [suitWord, value];
 }
+
+class Card extends PIXI.Container {
+  static movingCardDelta = null;
+  static startConnectionCard = null;
+
+  constructor(joker = false, faceWidth = 90, borderWidth = 2) {
+    super();
+
+    this.x = app.screen.width / 2;
+    this.y = app.screen.height / 2;
+
+    [this.suit, this.value] = parsePrompt(prompt("🃏"));
+
+    this.face = PIXI.Sprite.from(this.suit[0].toUpperCase() + this.value);
+    this.face.anchor.set(0.5);
+    this.face.width = faceWidth;
+    this.face.scale.y = this.face.scale.x;
+    const faceHeight = this.face.height;
+
+    this.border = new PIXI.Graphics().roundRect(-borderWidth, -borderWidth, faceWidth + 2*borderWidth, faceHeight + 2*borderWidth, 2*borderWidth).fill("214e3e");
+    this.border.pivot.set(faceWidth / 2, faceHeight / 2);
+
+    this.addChild(this.border);
+    this.addChild(this.face);
+
+    this.eventMode = "static";
+    this.cursor = "pointer";
+    this
+      .on("pointerdown", Card.focusCard)
+      .on("pointerup", Card.unselectCard)
+      .on("pointerleave", Card.unselectCard)
+      .on("pointermove", Card.updateMovingCard);
+
+    this.joker = joker;
+    this.next = null;
+    this.prevs = [];
+
+    this.selected = false;
+  }
+
+  static focusCard(event) {
+    let focusedCard = event.currentTarget;
+    if (mode === "x") {
+      focusedCard.parent.removeChild(focusedCard); // WIP: remove lines
+    } else if (mode === "m" && !Card.movingCardDelta) {
+      focusedCard.parent.setChildIndex(focusedCard, focusedCard.parent.children.length - 1);
+      focusedCard.selected = true;
+      Card.movingCardDelta = {
+        x: event.data.getLocalPosition(focusedCard.parent).x - focusedCard.position.x,
+        y: event.data.getLocalPosition(focusedCard.parent).y - focusedCard.position.y
+      };
+    } else if (mode === "c") {
+      if (!Card.startConnectionCard) { // start connection
+        if (!focusedCard.next) {
+          Card.startConnectionCard = focusedCard;
+          focusedCard.seletcted = true;
+        }
+      } else {
+        if (focusedCard.joker || focusedCard.prevs.length == 0) {
+          toggleLine(Card.startConnectionCard, focusedCard);
+          Card.startConnectionCard = null; // finished connection
+        }
+      }
+    }
+  }
+
+  static unselectCard(event) {
+    event.currentTarget.selected = false;
+    Card.movingCardDelta = null;
+  }
+
+  static updateMovingCard(event) {
+    let focusedCard = event.currentTarget;
+    if (focusedCard.selected) {
+      focusedCard.position.x = event.data.getLocalPosition(focusedCard.parent).x - Card.movingCardDelta.x;
+      focusedCard.position.y = event.data.getLocalPosition(focusedCard.parent).y - Card.movingCardDelta.y;
+    }
+  }
+}
+
+function addCardSprite() {
+  app.stage.addChild(new Card());
+}
+
+
 
 // // // // // // // // // // // // // // // //
 
@@ -128,42 +189,6 @@ function createModeIndicator() {
 
 // // // // // // // // // // // // // // // //
 
-function focusCard(event) {
-  let focusedCard = event.currentTarget;
-  if (mode === "x") {
-    focusedCard.parent.removeChild(focusedCard);
-    cards[focusedCard.cardId] = null;
-    for (let lineId of focusedCard.connectedLines) {
-      removeLine(lineId)
-    }
-  } else if (mode === "m" && !movingCardId) {
-    focusedCard.parent.setChildIndex(focusedCard, focusedCard.parent.children.length - 1);
-    movingCardId = focusedCard.cardId;
-    movingCardDelta.x = event.data.getLocalPosition(focusedCard.parent).x - focusedCard.position.x;
-    movingCardDelta.y = event.data.getLocalPosition(focusedCard.parent).y - focusedCard.position.y;
-  } else if (mode === "c") {
-    if (!startConnectionCard) { // start connection
-      startConnectionCard = focusedCard;
-    } else {
-      toggleLine(startConnectionCard, focusedCard);
-      startConnectionCard = null; // finished connection
-    }
-  }
-}
-
-function unfocusCard(event) {
-  movingCardId = null;
-  movingCardDelta.x = null;
-  movingCardDelta.y = null;
-}
-
-function updateMovingCard(event) {
-  let focusedCard = event.currentTarget;
-  if (movingCardId == focusedCard.cardId) {
-    focusedCard.position.x = event.data.getLocalPosition(focusedCard.parent).x - movingCardDelta.x;
-    focusedCard.position.y = event.data.getLocalPosition(focusedCard.parent).y - movingCardDelta.y;
-  }
-}
 
 // // // // // // // // // // // // // // // //
 
