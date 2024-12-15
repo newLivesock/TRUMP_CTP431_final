@@ -1,5 +1,7 @@
 "use strict";
 
+import { play } from "./webchuck.js"
+
 const app = new PIXI.Application();
 globalThis.__PIXI_APP__ = app; // PixiJS DevTools
 
@@ -19,9 +21,15 @@ window.onload = async function() {
   createModeIndicator()
   await preload()
   addEventListener("keydown", handleKeyEvent)
+  let elapsed = 0.0;
   app.ticker.add((time) => {
+    elapsed += time.deltaTime;
     for (let lineId in lines) {
       updateLine(lineId);
+    }
+    if (elapsed > 300) {
+      elapsed -= 300;
+      play(0, 0);
     }
   })
 }
