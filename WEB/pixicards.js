@@ -24,6 +24,10 @@ window.onload = async function() {
   app.ticker.add((time) => {
     elapsed += time.deltaTime;
     updateArrowVisual();
+    modeText.text = verboseMode(mode)
+    if (!checkInit()) {
+      modeText.text += "\nInit ChucK\n";
+    }
     if (elapsed > 60) { // 1/60
       elapsed -= 60;
       playOneSec(...generateListForChucK(joker));
@@ -282,10 +286,6 @@ function handleKeyEvent(event) {
     if (Card.selectedCard) {
       Card.unselect();
     }
-  }
-  modeText.text = verboseMode(mode)
-  if (!checkInit()) {
-    modeText.text += "\nWaiting for WebChucK";
   }
 }
 
