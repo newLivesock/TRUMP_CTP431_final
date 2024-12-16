@@ -1,6 +1,6 @@
 "use strict";
 
-import { theChuck, play } from "./webchuck.js"
+import { checkInit, playOneSec } from "./webchuck.js"
 
 const app = new PIXI.Application();
 globalThis.__PIXI_APP__ = app; // PixiJS DevTools
@@ -26,7 +26,7 @@ window.onload = async function() {
     updateArrowVisual();
     if (elapsed > 60) { // 1/60
       elapsed -= 60;
-      // play(0, 0);
+      playOneSec(...generateListForChucK(joker));
     }
   })
 }
@@ -284,7 +284,7 @@ function handleKeyEvent(event) {
     }
   }
   modeText.text = verboseMode(mode)
-  if (theChuck === undefined) {
+  if (!checkInit()) {
     modeText.text += "\nWaiting for WebChucK";
   }
 }
